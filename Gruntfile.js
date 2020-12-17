@@ -5,7 +5,6 @@ module.exports = ( grunt ) => {
 const _ = require( "lodash" );
 const semver = require( "semver" );
 const Handlebars = require( "handlebars" );
-const http = require( "http" );
 const CLIEngine = require( "eslint" ).CLIEngine;
 
 grunt.loadNpmTasks( "grunt-eslint" );
@@ -397,52 +396,15 @@ grunt.registerTask( "build-index", function() {
 		Handlebars.compile( grunt.file.read( "templates/pep.hbs" ) )( data ) );
 } );
 
-grunt.registerTask( "reload-listings", function() {
-	const done = this.async();
-	const host = "http://" + grunt.config( "config" ).url;
-	const paths = [ "/", "/jquery/", "/ui/", "/mobile/", "/color/", "/qunit/", "/pep/" ];
-	let waiting = paths.length;
-
-	paths.forEach( ( path ) => {
-		path = host + path;
-		http.get( path + "?reload", ( response ) => {
-			if ( response.statusCode >= 400 ) {
-				grunt.log.error( "Error reloading " + path );
-				grunt.log.error( "Status code: " + response.statusCode );
-				return done( false );
-			}
-
-			grunt.log.writeln( "Successfully reloaded " + path );
-			if ( !--waiting ) {
-				done();
-			}
-		} ).on( "error", ( error ) => {
-			grunt.log.error( "Error loading " + path );
-			grunt.log.error( error );
-			done( false );
-		} );
-	} );
-} );
-
 grunt.registerTask( "ensure-dist-resources", function() {
 	grunt.file.mkdir( "dist/resources" );
 } );
 
-grunt.registerTask( "ensure-config", function() {
-
-	// This will fail with "Cannot find module" if the file
-	// does not exist
-	const config = require( "./config" );
-	config.dir = "dist/pages";
-	grunt.config.merge( { config } );
-} );
-
 grunt.registerTask( "sri-generate", [ "ensure-dist-resources", "sri:generate" ] );
 
-// The "grunt deploy" command is automatically invoked on git-commit by the server that
+// The "grunt" command is automatically invoked on git-commit by the server that
 // will deploy the site.
 grunt.registerTask( "build", [ "sri-generate", "build-index" ] );
-grunt.registerTask( "deploy", [ "ensure-config", "build", "reload-listings" ] );
-grunt.registerTask( "default", [ "deploy" ] );
+grunt.registerTask( "default", [ "build" ] );
 
 };
