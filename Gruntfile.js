@@ -1,9 +1,11 @@
+'use strict';
+
 module.exports = function( grunt ) {
 
-var _ = require( "lodash" ),
-	semver = require( "semver" ),
-	Handlebars = require( "handlebars" ),
-	http = require( "http" );
+const _ = require( "lodash" );
+const semver = require( "semver" );
+const Handlebars = require( "handlebars" );
+const http = require( "http" );
 
 grunt.loadNpmTasks( "grunt-jquery-content" );
 grunt.loadNpmTasks( "grunt-sri" );
@@ -24,10 +26,10 @@ grunt.initConfig( {
 } );
 
 grunt.registerTask( "build-index", function() {
-	var rversion = /^(\d+)\.(\d+)(?:\.(\d+))?-?(.*)$/;
+	const rversion = /^(\d+)\.(\d+)(?:\.(\d+))?-?(.*)$/;
 
 	function normalizeVersion( version ) {
-		var match = rversion.exec( version );
+		const match = rversion.exec( version );
 
 		return match[1] + "." + match[2] + "." + ( match[3] || 0 ) +
 			( match[4] ? "-" + match[4] : "" );
@@ -48,7 +50,7 @@ grunt.registerTask( "build-index", function() {
 	function parseReleases( files, regex ) {
 		return files
 			.map( function( filename ) {
-				var matches = regex.exec( filename );
+				const matches = regex.exec( filename );
 
 				// matches[ 3 ] = "min" or "pack" or ""
 				if ( !matches || matches[3] ) {
@@ -93,7 +95,7 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function getCoreData() {
-		var files = grunt.file.expand( "cdn/*.js" ),
+		const files = grunt.file.expand( "cdn/*.js" ),
 			coreReleases = parseStableReleases( files,
 				/(jquery-(\d+\.\d+(?:\.\d+)?[^.]*)(?:\.(min|pack))?\.js)/ ),
 			coreReleasesGrouped = groupByMajor( coreReleases ),
@@ -101,7 +103,7 @@ grunt.registerTask( "build-index", function() {
 				/(jquery-migrate-(\d+\.\d+(?:\.\d+)?[^.]*)(?:\.(min))?\.js)/ );
 
 		function addTypes( release ) {
-			var minFilename = release.filename.replace( ".js", ".min.js" ),
+			const minFilename = release.filename.replace( ".js", ".min.js" ),
 				packFilename = release.filename.replace( ".js", ".pack.js" ),
 				slimFilename = release.filename.replace( ".js", ".slim.js" ),
 				slimMinFilename = release.filename.replace( ".js", ".slim.min.js" );
@@ -125,7 +127,7 @@ grunt.registerTask( "build-index", function() {
 		} );
 		migrateReleases.forEach( addTypes );
 
-		var index = {
+		const index = {
 			jquery: [],
 			migrate: {
 				latestStable: getLatestStable( migrateReleases ),
@@ -144,10 +146,10 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function getUiData() {
-		var majorReleases = {},
+		const majorReleases = {},
 			uiReleases = grunt.file.expand( {filter: "isDirectory"}, "cdn/ui/*" )
 				.map( function( dir ) {
-					var filename = dir.substring( 4 ) + "/jquery-ui.js";
+					const filename = dir.substring( 4 ) + "/jquery-ui.js";
 
 					return {
 						filename: filename,
@@ -165,7 +167,7 @@ grunt.registerTask( "build-index", function() {
 
 		// Group by major release
 		uiReleases.forEach( function( release ) {
-			var major = /^\d+\.\d+/.exec( release.version )[0];
+			const major = /^\d+\.\d+/.exec( release.version )[0];
 			if ( !majorReleases[major] ) {
 				majorReleases[major] = [];
 			}
@@ -175,7 +177,7 @@ grunt.registerTask( "build-index", function() {
 
 		// Convert to array of major release groups
 		return Object.keys( majorReleases ).map( function( major ) {
-			var all = majorReleases[major],
+			const all = majorReleases[major],
 				latestStable = getLatestStable( all );
 
 			return {
@@ -189,9 +191,9 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function getMobileData() {
-		var files = grunt.file.expand( "cdn/mobile/*/*.css" ),
+		const files = grunt.file.expand( "cdn/mobile/*/*.css" ),
 			releases = files.map( function( file ) {
-				var version = /cdn\/mobile\/([^\/]+)/.exec( file )[1],
+				const version = /cdn\/mobile\/([^\/]+)/.exec( file )[1],
 					filename = "mobile/" + version + "/jquery.mobile-" + version + ".js",
 					mainCssFile = "cdn/" + filename.replace( ".js", ".css" );
 
@@ -211,7 +213,7 @@ grunt.registerTask( "build-index", function() {
 				} );
 
 		function addTypes( release ) {
-			var minFilename = release.filename.replace( ".js", ".min.js" ),
+			const minFilename = release.filename.replace( ".js", ".min.js" ),
 				css = release.filename.replace( ".js", ".css" ),
 				minCss = css.replace( ".css", ".min.css" ),
 				structure = css.replace( "jquery.mobile", "jquery.mobile.structure" ),
@@ -236,7 +238,7 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function getColorData() {
-		var files = grunt.file.expand( "cdn/color/*.js" ),
+		const files = grunt.file.expand( "cdn/color/*.js" ),
 			releases = parseStableReleases( files,
 				/(color\/jquery.color-(\d+\.\d+(?:\.\d+)?[^.]*)(?:\.(min))?\.js)/ ),
 			modes = ["svg-names", "plus-names"];
@@ -245,7 +247,7 @@ grunt.registerTask( "build-index", function() {
 			release.minified = release.filename.replace( ".js", ".min.js" );
 
 			modes.forEach( function( mode ) {
-				var filename = release.filename.replace( "jquery.color", "jquery.color." + mode ),
+				const filename = release.filename.replace( "jquery.color", "jquery.color." + mode ),
 					minFilename = filename.replace( ".js", ".min.js" );
 
 				if ( files.indexOf( "cdn/" + filename ) !== -1 ) {
@@ -267,7 +269,7 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function getQunitData() {
-		var files = grunt.file.expand( "cdn/qunit/*.js" ),
+		const files = grunt.file.expand( "cdn/qunit/*.js" ),
 			releases = parseStableReleases( files,
 				/(qunit\/qunit-(\d+\.\d+\.\d+[^.]*)(?:\.(min))?\.js)/ );
 
@@ -282,9 +284,9 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function getPepData() {
-		var releases = grunt.file.expand( {filter: "isDirectory"}, "cdn/pep/*" )
+		const releases = grunt.file.expand( {filter: "isDirectory"}, "cdn/pep/*" )
 			.map( function( dir ) {
-				var filename = dir.substring( 4 ) + "/pep.js";
+				const filename = dir.substring( 4 ) + "/pep.js";
 
 				return {
 					filename: filename,
@@ -302,10 +304,10 @@ grunt.registerTask( "build-index", function() {
 		};
 	}
 
-	var sriHashes = require( "./dist/resources/sri-directives.json" );
+	const sriHashes = require( "./dist/resources/sri-directives.json" );
 
 	function href( file, label ) {
-		var sri = "sha256-" + sriHashes["@cdn/" + file]["hashes"]["sha256"];
+		const sri = "sha256-" + sriHashes["@cdn/" + file]["hashes"]["sha256"];
 		return "<a class='open-sri-modal' href='/" + file + "' data-hash='" + sri + "'>" + label + "</a>";
 	}
 
@@ -321,7 +323,7 @@ grunt.registerTask( "build-index", function() {
 	} );
 
 	Handlebars.registerHelper( "release", function( prefix, release ) {
-		var html = prefix + " " + release.version + " - " + href( release.filename, "uncompressed" );
+		let html = prefix + " " + release.version + " - " + href( release.filename, "uncompressed" );
 		if ( release.minified ) {
 			html += ", " + href( release.minified, "minified" );
 		}
@@ -339,7 +341,7 @@ grunt.registerTask( "build-index", function() {
 	} );
 
 	Handlebars.registerHelper( "uiTheme", function( release ) {
-		var url;
+		let url;
 		// TODO: link to minified theme if available
 		if ( release.themes.indexOf( "smoothness" ) !== -1 ) {
 			url = "smoothness/jquery-ui.css";
@@ -352,7 +354,7 @@ grunt.registerTask( "build-index", function() {
 	} );
 
 	Handlebars.registerHelper( "include", (function() {
-		var templates = {};
+		const templates = {};
 		return function( template ) {
 			if ( !templates.hasOwnProperty( template ) ) {
 				templates[template] = Handlebars.compile(
@@ -363,7 +365,7 @@ grunt.registerTask( "build-index", function() {
 		};
 	})() );
 
-	var data = getCoreData();
+	const data = getCoreData();
 	data.ui = getUiData();
 	data.mobile = getMobileData();
 	data.color = getColorData();
@@ -393,10 +395,10 @@ grunt.registerTask( "build-index", function() {
 } );
 
 grunt.registerTask( "reload-listings", function() {
-	var done = this.async(),
-		host = "http://" + grunt.config( "wordpress" ).url,
-		paths = ["/", "/jquery/", "/ui/", "/mobile/", "/color/", "/qunit/", "/pep/"],
-		waiting = paths.length;
+	const done = this.async();
+	const host = "http://" + grunt.config( "wordpress" ).url;
+	const paths = ["/", "/jquery/", "/ui/", "/mobile/", "/color/", "/qunit/", "/pep/"];
+	let waiting = paths.length;
 
 	paths.forEach( function( path ) {
 		path = host + path;
@@ -426,7 +428,7 @@ grunt.registerTask( "ensure-dist-resources", function() {
 grunt.registerTask( "ensure-wordpress-config", function() {
 	// This will fail with "Cannot find module" if the file
 	// does not exist
-	var config = require( "./config" );
+	const config = require( "./config" );
 	config.dir = "dist/wordpress";
 	grunt.config.merge( {
 		wordpress: config
