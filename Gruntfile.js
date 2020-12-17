@@ -48,7 +48,7 @@ grunt.initConfig( {
 	}
 } );
 
-grunt.registerTask( "build-index", function() {
+grunt.registerTask( "build-pages", function() {
 	const rversion = /^(\d+)\.(\d+)(?:\.(\d+))?-?(.*)$/;
 
 	function normalizeVersion( version ) {
@@ -404,7 +404,7 @@ grunt.registerTask( "sri-generate", [ "ensure-dist-resources", "sri:generate" ] 
 
 // The "grunt" command is automatically invoked on git-commit by the server that
 // will deploy the site.
-grunt.registerTask( "build", [ "sri-generate", "build-index" ] );
+grunt.registerTask( "build", [ "sri-generate", "build-pages" ] );
 grunt.registerTask( "default", [ "build" ] );
 
 };
