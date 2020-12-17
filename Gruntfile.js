@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 module.exports = function( grunt ) {
 
@@ -6,11 +6,35 @@ const _ = require( "lodash" );
 const semver = require( "semver" );
 const Handlebars = require( "handlebars" );
 const http = require( "http" );
+const CLIEngine = require( "eslint" ).CLIEngine;
 
-grunt.loadNpmTasks( "grunt-jquery-content" );
+grunt.loadNpmTasks( "grunt-eslint" );
 grunt.loadNpmTasks( "grunt-sri" );
 
 grunt.initConfig( {
+	eslint: {
+		options: {
+			maxWarnings: 0
+		},
+
+		// We have to explicitly declare "src" property otherwise "newer"
+		// task wouldn't work properly :/
+		dist: {
+			src: [ "dist/jquery.js", "dist/jquery.min.js" ]
+		},
+		dev: {
+			src: [
+				"Gruntfile.js",
+
+				// Ignore files from .eslintignore
+				// See https://github.com/sindresorhus/grunt-eslint/issues/119
+				...new CLIEngine()
+					.getConfigForFile( "Gruntfile.js" )
+					.ignorePatterns.map( ( p ) => `!${ p }` )
+			]
+		}
+	},
+
 	sri: {
 		generate: {
 			src: [
@@ -18,7 +42,7 @@ grunt.initConfig( {
 				"cdn/**/*.css"
 			],
 			options: {
-				algorithms: ["sha256"],
+				algorithms: [ "sha256" ],
 				dest: "dist/resources/sri-directives.json"
 			}
 		}
@@ -31,12 +55,12 @@ grunt.registerTask( "build-index", function() {
 	function normalizeVersion( version ) {
 		const match = rversion.exec( version );
 
-		return match[1] + "." + match[2] + "." + ( match[3] || 0 ) +
-			( match[4] ? "-" + match[4] : "" );
+		return match[ 1 ] + "." + match[ 2 ] + "." + ( match[ 3 ] || 0 ) +
+			( match[ 4 ] ? "-" + match[ 4 ] : "" );
 	}
 
 	function camelCase( str ) {
-		return str.replace( /-([a-z])/g, function( $0, $1 ) {
+		return str.replace( /-([a-z])/g, function( _$0, $1 ) {
 			return $1.toUpperCase();
 		} );
 	}
@@ -53,13 +77,13 @@ grunt.registerTask( "build-index", function() {
 				const matches = regex.exec( filename );
 
 				// matches[ 3 ] = "min" or "pack" or ""
-				if ( !matches || matches[3] ) {
+				if ( !matches || matches[ 3 ] ) {
 					return null;
 				}
 
 				return {
-					filename: matches[0],
-					version: normalizeVersion( matches[2] )
+					filename: matches[ 0 ],
+					version: normalizeVersion( matches[ 2 ] )
 				};
 			} )
 
@@ -75,8 +99,8 @@ grunt.registerTask( "build-index", function() {
 			.filter( function( release ) {
 
 				// Filter out non-stable releases via this semver trick.
-				return semver.satisfies( release.version, ">=0" )
-			} )
+				return semver.satisfies( release.version, ">=0" );
+			} );
 	}
 
 	function groupByMajor( releases ) {
@@ -85,13 +109,13 @@ grunt.registerTask( "build-index", function() {
 				return semver.major( release.version );
 			} )
 			.map( function( group, key ) {
-				return [key, group]
+				return [ key, group ];
 			} )
 			.sortBy( function( group ) {
-				return group[0];
+				return group[ 0 ];
 			} )
 			.reverse()
-			.value()
+			.value();
 	}
 
 	function getCoreData() {
@@ -123,7 +147,7 @@ grunt.registerTask( "build-index", function() {
 		}
 
 		coreReleasesGrouped.forEach( function( group ) {
-			group[1].forEach( addTypes );
+			group[ 1 ].forEach( addTypes );
 		} );
 		migrateReleases.forEach( addTypes );
 
@@ -136,10 +160,10 @@ grunt.registerTask( "build-index", function() {
 		};
 
 		coreReleasesGrouped.forEach( function( group ) {
-			index.jquery.push( [group[0], {
-				latestStable: getLatestStable( group[1] ),
-				all: group[1]
-			}] );
+			index.jquery.push( [ group[ 0 ], {
+				latestStable: getLatestStable( group[ 1 ] ),
+				all: group[ 1 ]
+			} ] );
 		} );
 
 		return index;
@@ -147,7 +171,7 @@ grunt.registerTask( "build-index", function() {
 
 	function getUiData() {
 		const majorReleases = {},
-			uiReleases = grunt.file.expand( {filter: "isDirectory"}, "cdn/ui/*" )
+			uiReleases = grunt.file.expand( { filter: "isDirectory" }, "cdn/ui/*" )
 				.map( function( dir ) {
 					const filename = dir.substring( 4 ) + "/jquery-ui.js";
 
@@ -155,7 +179,7 @@ grunt.registerTask( "build-index", function() {
 						filename: filename,
 						version: dir.substring( 7 ),
 						minified: filename.replace( ".js", ".min.js" ),
-						themes: grunt.file.expand( {filter: "isDirectory"}, dir + "/themes/*" )
+						themes: grunt.file.expand( { filter: "isDirectory" }, dir + "/themes/*" )
 							.map( function( themeDir ) {
 								return themeDir.substring( dir.length + 8 );
 							} )
@@ -167,17 +191,17 @@ grunt.registerTask( "build-index", function() {
 
 		// Group by major release
 		uiReleases.forEach( function( release ) {
-			const major = /^\d+\.\d+/.exec( release.version )[0];
-			if ( !majorReleases[major] ) {
-				majorReleases[major] = [];
+			const major = /^\d+\.\d+/.exec( release.version )[ 0 ];
+			if ( !majorReleases[ major ] ) {
+				majorReleases[ major ] = [];
 			}
 
-			majorReleases[major].push( release );
+			majorReleases[ major ].push( release );
 		} );
 
 		// Convert to array of major release groups
 		return Object.keys( majorReleases ).map( function( major ) {
-			const all = majorReleases[major],
+			const all = majorReleases[ major ],
 				latestStable = getLatestStable( all );
 
 			return {
@@ -193,7 +217,7 @@ grunt.registerTask( "build-index", function() {
 	function getMobileData() {
 		const files = grunt.file.expand( "cdn/mobile/*/*.css" ),
 			releases = files.map( function( file ) {
-				const version = /cdn\/mobile\/([^\/]+)/.exec( file )[1],
+				const version = /cdn\/mobile\/([^\/]+)/.exec( file )[ 1 ],
 					filename = "mobile/" + version + "/jquery.mobile-" + version + ".js",
 					mainCssFile = "cdn/" + filename.replace( ".js", ".css" );
 
@@ -206,6 +230,7 @@ grunt.registerTask( "build-index", function() {
 					version: normalizeVersion( version )
 				};
 			} )
+
 			// Remove null values from filtering
 				.filter( _.identity )
 				.sort( function( a, b ) {
@@ -241,7 +266,7 @@ grunt.registerTask( "build-index", function() {
 		const files = grunt.file.expand( "cdn/color/*.js" ),
 			releases = parseStableReleases( files,
 				/(color\/jquery.color-(\d+\.\d+(?:\.\d+)?[^.]*)(?:\.(min))?\.js)/ ),
-			modes = ["svg-names", "plus-names"];
+			modes = [ "svg-names", "plus-names" ];
 
 		function addTypes( release ) {
 			release.minified = release.filename.replace( ".js", ".min.js" );
@@ -251,7 +276,7 @@ grunt.registerTask( "build-index", function() {
 					minFilename = filename.replace( ".js", ".min.js" );
 
 				if ( files.indexOf( "cdn/" + filename ) !== -1 ) {
-					release[camelCase( mode )] = {
+					release[ camelCase( mode ) ] = {
 						filename: filename,
 						version: release.version,
 						minified: minFilename
@@ -284,7 +309,7 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function getPepData() {
-		const releases = grunt.file.expand( {filter: "isDirectory"}, "cdn/pep/*" )
+		const releases = grunt.file.expand( { filter: "isDirectory" }, "cdn/pep/*" )
 			.map( function( dir ) {
 				const filename = dir.substring( 4 ) + "/pep.js";
 
@@ -307,8 +332,9 @@ grunt.registerTask( "build-index", function() {
 	const sriHashes = require( "./dist/resources/sri-directives.json" );
 
 	function href( file, label ) {
-		const sri = "sha256-" + sriHashes["@cdn/" + file]["hashes"]["sha256"];
-		return "<a class='open-sri-modal' href='/" + file + "' data-hash='" + sri + "'>" + label + "</a>";
+		const sri = "sha256-" + sriHashes[ "@cdn/" + file ].hashes.sha256;
+		return "<a class='open-sri-modal' href='/" + file + "' data-hash='" + sri + "'>" +
+			label + "</a>";
 	}
 
 	Handlebars.registerHelper( "ifeq", function( v1, v2, options ) {
@@ -323,7 +349,8 @@ grunt.registerTask( "build-index", function() {
 	} );
 
 	Handlebars.registerHelper( "release", function( prefix, release ) {
-		let html = prefix + " " + release.version + " - " + href( release.filename, "uncompressed" );
+		let html = prefix + " " + release.version + " - " +
+			href( release.filename, "uncompressed" );
 		if ( release.minified ) {
 			html += ", " + href( release.minified, "minified" );
 		}
@@ -342,6 +369,7 @@ grunt.registerTask( "build-index", function() {
 
 	Handlebars.registerHelper( "uiTheme", function( release ) {
 		let url;
+
 		// TODO: link to minified theme if available
 		if ( release.themes.indexOf( "smoothness" ) !== -1 ) {
 			url = "smoothness/jquery-ui.css";
@@ -353,17 +381,17 @@ grunt.registerTask( "build-index", function() {
 			"<a href='/ui/" + release.version + "/themes/" + url + "'>theme</a>" );
 	} );
 
-	Handlebars.registerHelper( "include", (function() {
+	Handlebars.registerHelper( "include", ( function() {
 		const templates = {};
 		return function( template ) {
 			if ( !templates.hasOwnProperty( template ) ) {
-				templates[template] = Handlebars.compile(
+				templates[ template ] = Handlebars.compile(
 					grunt.file.read( "templates/" + template + ".hbs" ) );
 			}
 
-			return new Handlebars.SafeString( templates[template]( this ) );
+			return new Handlebars.SafeString( templates[ template ]( this ) );
 		};
-	})() );
+	} )() );
 
 	const data = getCoreData();
 	data.ui = getUiData();
@@ -372,32 +400,32 @@ grunt.registerTask( "build-index", function() {
 	data.qunit = getQunitData();
 	data.pep = getPepData();
 
-	grunt.file.write( "dist/wordpress/posts/page/index.html",
+	grunt.file.write( "dist/pages/posts/page/index.html",
 		Handlebars.compile( grunt.file.read( "templates/index.hbs" ) )( data ) );
 
-	grunt.file.write( "dist/wordpress/posts/page/jquery.html",
+	grunt.file.write( "dist/pages/posts/page/jquery.html",
 		Handlebars.compile( grunt.file.read( "templates/jquery.hbs" ) )( data ) );
 
-	grunt.file.write( "dist/wordpress/posts/page/ui.html",
+	grunt.file.write( "dist/pages/posts/page/ui.html",
 		Handlebars.compile( grunt.file.read( "templates/ui.hbs" ) )( data ) );
 
-	grunt.file.write( "dist/wordpress/posts/page/mobile.html",
+	grunt.file.write( "dist/pages/posts/page/mobile.html",
 		Handlebars.compile( grunt.file.read( "templates/mobile.hbs" ) )( data ) );
 
-	grunt.file.write( "dist/wordpress/posts/page/color.html",
+	grunt.file.write( "dist/pages/posts/page/color.html",
 		Handlebars.compile( grunt.file.read( "templates/color.hbs" ) )( data ) );
 
-	grunt.file.write( "dist/wordpress/posts/page/qunit.html",
+	grunt.file.write( "dist/pages/posts/page/qunit.html",
 		Handlebars.compile( grunt.file.read( "templates/qunit.hbs" ) )( data ) );
 
-	grunt.file.write( "dist/wordpress/posts/page/pep.html",
+	grunt.file.write( "dist/pages/posts/page/pep.html",
 		Handlebars.compile( grunt.file.read( "templates/pep.hbs" ) )( data ) );
 } );
 
 grunt.registerTask( "reload-listings", function() {
 	const done = this.async();
-	const host = "http://" + grunt.config( "wordpress" ).url;
-	const paths = ["/", "/jquery/", "/ui/", "/mobile/", "/color/", "/qunit/", "/pep/"];
+	const host = "http://" + grunt.config( "config" ).url;
+	const paths = [ "/", "/jquery/", "/ui/", "/mobile/", "/color/", "/qunit/", "/pep/" ];
 	let waiting = paths.length;
 
 	paths.forEach( function( path ) {
@@ -425,22 +453,21 @@ grunt.registerTask( "ensure-dist-resources", function() {
 	grunt.file.mkdir( "dist/resources" );
 } );
 
-grunt.registerTask( "ensure-wordpress-config", function() {
+grunt.registerTask( "ensure-config", function() {
+
 	// This will fail with "Cannot find module" if the file
 	// does not exist
 	const config = require( "./config" );
-	config.dir = "dist/wordpress";
-	grunt.config.merge( {
-		wordpress: config
-	} );
+	config.dir = "dist/pages";
+	grunt.config.merge( { config } );
 } );
 
-grunt.registerTask( "sri-generate", ["ensure-dist-resources", "sri:generate"] );
+grunt.registerTask( "sri-generate", [ "ensure-dist-resources", "sri:generate" ] );
 
 // The "grunt deploy" command is automatically invoked on git-commit by the server that
-// will deploy the WordPress site.
-// Task tree: "deploy" > "wordpress-deploy" > "build-wordpress" > "build".
-grunt.registerTask( "build", ["sri-generate", "build-index"] );
-grunt.registerTask( "deploy", ["ensure-wordpress-config", "wordpress-deploy", "reload-listings"] );
+// will deploy the site.
+grunt.registerTask( "build", [ "sri-generate", "build-index" ] );
+grunt.registerTask( "deploy", [ "ensure-config", "build", "reload-listings" ] );
+grunt.registerTask( "default", [ "deploy" ] );
 
 };
