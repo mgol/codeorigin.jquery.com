@@ -7,10 +7,17 @@ const semver = require( "semver" );
 const Handlebars = require( "handlebars" );
 const CLIEngine = require( "eslint" ).CLIEngine;
 
+grunt.loadNpmTasks( "grunt-contrib-clean" );
 grunt.loadNpmTasks( "grunt-eslint" );
 grunt.loadNpmTasks( "grunt-sri" );
 
 grunt.initConfig( {
+	clean: {
+		dist: {
+			src: [ "dist" ]
+		}
+	},
+
 	eslint: {
 		options: {
 			maxWarnings: 0
@@ -404,7 +411,7 @@ grunt.registerTask( "sri-generate", [ "ensure-dist-resources", "sri:generate" ] 
 
 // The "grunt" command is automatically invoked on git-commit by the server that
 // will deploy the site.
-grunt.registerTask( "build", [ "sri-generate", "build-pages" ] );
+grunt.registerTask( "build", [ "clean", "sri-generate", "build-pages" ] );
 grunt.registerTask( "default", [ "build" ] );
 
 };
