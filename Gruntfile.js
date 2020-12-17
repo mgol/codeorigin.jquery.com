@@ -1,6 +1,6 @@
 "use strict";
 
-module.exports = function( grunt ) {
+module.exports = ( grunt ) => {
 
 const _ = require( "lodash" );
 const semver = require( "semver" );
@@ -60,20 +60,16 @@ grunt.registerTask( "build-index", function() {
 	}
 
 	function camelCase( str ) {
-		return str.replace( /-([a-z])/g, function( _$0, $1 ) {
-			return $1.toUpperCase();
-		} );
+		return str.replace( /-([a-z])/g, ( _$0, $1 ) => $1.toUpperCase() );
 	}
 
 	function getLatestStable( releases ) {
-		return _.find( releases, function( release ) {
-			return release.version.indexOf( "-" ) === -1;
-		} );
+		return _.find( releases, ( release ) => release.version.indexOf( "-" ) === -1 );
 	}
 
 	function parseReleases( files, regex ) {
 		return files
-			.map( function( filename ) {
+			.map( ( filename ) => {
 				const matches = regex.exec( filename );
 
 				// matches[ 3 ] = "min" or "pack" or ""
@@ -89,31 +85,20 @@ grunt.registerTask( "build-index", function() {
 
 			// Remove null values from filtering
 			.filter( _.identity )
-			.sort( function( a, b ) {
-				return semver.compare( b.version, a.version );
-			} );
+			.sort( ( a, b ) => semver.compare( b.version, a.version ) );
 	}
 
+	// Filter out non-stable releases via a semver trick.
 	function parseStableReleases() {
 		return parseReleases.apply( null, arguments )
-			.filter( function( release ) {
-
-				// Filter out non-stable releases via this semver trick.
-				return semver.satisfies( release.version, ">=0" );
-			} );
+			.filter( ( release ) => semver.satisfies( release.version, ">=0" ) );
 	}
 
 	function groupByMajor( releases ) {
 		return _( releases )
-			.groupBy( function( release ) {
-				return semver.major( release.version );
-			} )
-			.map( function( group, key ) {
-				return [ key, group ];
-			} )
-			.sortBy( function( group ) {
-				return group[ 0 ];
-			} )
+			.groupBy( ( release ) => semver.major( release.version ) )
+			.map( ( group, key ) => [ key, group ] )
+			.sortBy( ( group ) => group[ 0 ] )
 			.reverse()
 			.value();
 	}
@@ -146,7 +131,7 @@ grunt.registerTask( "build-index", function() {
 			}
 		}
 
-		coreReleasesGrouped.forEach( function( group ) {
+		coreReleasesGrouped.forEach( ( group ) => {
 			group[ 1 ].forEach( addTypes );
 		} );
 		migrateReleases.forEach( addTypes );
@@ -159,7 +144,7 @@ grunt.registerTask( "build-index", function() {
 			}
 		};
 
-		coreReleasesGrouped.forEach( function( group ) {
+		coreReleasesGrouped.forEach( ( group ) => {
 			index.jquery.push( [ group[ 0 ], {
 				latestStable: getLatestStable( group[ 1 ] ),
 				all: group[ 1 ]
@@ -172,7 +157,7 @@ grunt.registerTask( "build-index", function() {
 	function getUiData() {
 		const majorReleases = {},
 			uiReleases = grunt.file.expand( { filter: "isDirectory" }, "cdn/ui/*" )
-				.map( function( dir ) {
+				.map( ( dir ) => {
 					const filename = dir.substring( 4 ) + "/jquery-ui.js";
 
 					return {
@@ -180,17 +165,13 @@ grunt.registerTask( "build-index", function() {
 						version: dir.substring( 7 ),
 						minified: filename.replace( ".js", ".min.js" ),
 						themes: grunt.file.expand( { filter: "isDirectory" }, dir + "/themes/*" )
-							.map( function( themeDir ) {
-								return themeDir.substring( dir.length + 8 );
-							} )
+							.map( ( themeDir ) => themeDir.substring( dir.length + 8 ) )
 					};
 				} )
-				.sort( function( a, b ) {
-					return semver.compare( b.version, a.version );
-				} );
+				.sort( ( a, b ) => semver.compare( b.version, a.version ) );
 
 		// Group by major release
-		uiReleases.forEach( function( release ) {
+		uiReleases.forEach( ( release ) => {
 			const major = /^\d+\.\d+/.exec( release.version )[ 0 ];
 			if ( !majorReleases[ major ] ) {
 				majorReleases[ major ] = [];
@@ -200,23 +181,21 @@ grunt.registerTask( "build-index", function() {
 		} );
 
 		// Convert to array of major release groups
-		return Object.keys( majorReleases ).map( function( major ) {
+		return Object.keys( majorReleases ).map( ( major ) => {
 			const all = majorReleases[ major ],
 				latestStable = getLatestStable( all );
 
 			return {
 				major: major,
 				latestStable: latestStable,
-				all: all.filter( function( release ) {
-					return release !== latestStable;
-				} )
+				all: all.filter( ( release ) => release !== latestStable )
 			};
 		} );
 	}
 
 	function getMobileData() {
 		const files = grunt.file.expand( "cdn/mobile/*/*.css" ),
-			releases = files.map( function( file ) {
+			releases = files.map( ( file ) => {
 				const version = /cdn\/mobile\/([^\/]+)/.exec( file )[ 1 ],
 					filename = "mobile/" + version + "/jquery.mobile-" + version + ".js",
 					mainCssFile = "cdn/" + filename.replace( ".js", ".css" );
@@ -233,9 +212,7 @@ grunt.registerTask( "build-index", function() {
 
 			// Remove null values from filtering
 				.filter( _.identity )
-				.sort( function( a, b ) {
-					return semver.compare( b.version, a.version );
-				} );
+				.sort( ( a, b ) => semver.compare( b.version, a.version ) );
 
 		function addTypes( release ) {
 			const minFilename = release.filename.replace( ".js", ".min.js" ),
@@ -271,7 +248,7 @@ grunt.registerTask( "build-index", function() {
 		function addTypes( release ) {
 			release.minified = release.filename.replace( ".js", ".min.js" );
 
-			modes.forEach( function( mode ) {
+			modes.forEach( ( mode ) => {
 				const filename = release.filename.replace( "jquery.color", "jquery.color." + mode ),
 					minFilename = filename.replace( ".js", ".min.js" );
 
@@ -298,7 +275,7 @@ grunt.registerTask( "build-index", function() {
 			releases = parseStableReleases( files,
 				/(qunit\/qunit-(\d+\.\d+\.\d+[^.]*)(?:\.(min))?\.js)/ );
 
-		releases.forEach( function( release ) {
+		releases.forEach( ( release ) => {
 			release.theme = release.filename.replace( ".js", ".css" );
 		} );
 
@@ -310,7 +287,7 @@ grunt.registerTask( "build-index", function() {
 
 	function getPepData() {
 		const releases = grunt.file.expand( { filter: "isDirectory" }, "cdn/pep/*" )
-			.map( function( dir ) {
+			.map( ( dir ) => {
 				const filename = dir.substring( 4 ) + "/pep.js";
 
 				return {
@@ -319,9 +296,7 @@ grunt.registerTask( "build-index", function() {
 					minified: filename.replace( ".js", ".min.js" )
 				};
 			} )
-			.sort( function( a, b ) {
-				return semver.compare( b.version, a.version );
-			} );
+			.sort( ( a, b ) => semver.compare( b.version, a.version ) );
 
 		return {
 			latestStable: getLatestStable( releases ),
@@ -381,7 +356,7 @@ grunt.registerTask( "build-index", function() {
 			"<a href='/ui/" + release.version + "/themes/" + url + "'>theme</a>" );
 	} );
 
-	Handlebars.registerHelper( "include", ( function() {
+	Handlebars.registerHelper( "include", ( () => {
 		const templates = {};
 		return function( template ) {
 			if ( !templates.hasOwnProperty( template ) ) {
@@ -428,9 +403,9 @@ grunt.registerTask( "reload-listings", function() {
 	const paths = [ "/", "/jquery/", "/ui/", "/mobile/", "/color/", "/qunit/", "/pep/" ];
 	let waiting = paths.length;
 
-	paths.forEach( function( path ) {
+	paths.forEach( ( path ) => {
 		path = host + path;
-		http.get( path + "?reload", function( response ) {
+		http.get( path + "?reload", ( response ) => {
 			if ( response.statusCode >= 400 ) {
 				grunt.log.error( "Error reloading " + path );
 				grunt.log.error( "Status code: " + response.statusCode );
@@ -441,7 +416,7 @@ grunt.registerTask( "reload-listings", function() {
 			if ( !--waiting ) {
 				done();
 			}
-		} ).on( "error", function( error ) {
+		} ).on( "error", ( error ) => {
 			grunt.log.error( "Error loading " + path );
 			grunt.log.error( error );
 			done( false );
